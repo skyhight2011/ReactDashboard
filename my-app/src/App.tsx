@@ -1,11 +1,10 @@
 import React from 'react';
+import Manager from './page/Manager';
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-       <p>my app</p>
-      </header>
+     <Manager />
     </div>
   );
 }
