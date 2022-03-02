@@ -8,6 +8,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function UserList() {
   const [data, setData] = useState(UserData);
+  const handleDelete = (id: string) =>{
+    setData(data.filter((item) => item.id !== id));
+  }
 
   const columns: GridColDef[] = [
     { field: 'username', headerName: 'USER NAME', width: 150 },
@@ -34,10 +37,9 @@ export default function UserList() {
       field: 'email',
       headerName: 'EMAIL',
       width: 200,
-      editable: true,
     },
     {
-      field: 'post',
+      field: 'posts',
       headerName: 'POST',
       type: 'number',
       width: 100,
@@ -54,7 +56,7 @@ export default function UserList() {
       return (
         <>
         <Button variant='contained'>view</Button>
-        <Button>
+        <Button onClick={()=>handleDelete(params.row.id)}>
           <DeleteIcon />
         </Button>
         </>
