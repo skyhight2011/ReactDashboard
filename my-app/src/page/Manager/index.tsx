@@ -2,6 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Container, Grid, Typography } from '@mui/material';
 import { styled } from '@mui/system';
 import * as React from 'react';
+import UserStatusFiler from './Components/UserFilter';
 import UserSearch from './Components/UserSearch';
 import UserList from './UserList';
 
@@ -17,12 +18,11 @@ export default function Manager () {
         <PageTitle>
           <Grid  container justifyContent="space-between" alignItems="center">
             <Grid item>
-              <Typography variant='h3' component='h3' gutterBottom>User Manager</Typography>
+              <Typography variant='h3' component='h3' gutterBottom>Users Management</Typography>
               <Typography variant='subtitle1'>
                 All aspects related to the app users can be managed from this page
               </Typography>
             </Grid>
-
             <Grid item>
             <Button
           sx={{ mt: { xs: 2, md: 0 } }}
@@ -35,6 +35,7 @@ export default function Manager () {
           </Grid>
         </PageTitle>
         <Container maxWidth="lg">
+          <UserStatusFiler />
         <UserSearch />
         <Grid
           container
