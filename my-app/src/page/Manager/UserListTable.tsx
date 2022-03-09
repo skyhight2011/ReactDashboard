@@ -13,23 +13,24 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow, Tabs, TextField, Tooltip,
   Typography
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { ChangeEvent, FC, useState } from 'react';
-import { UserListData } from '../../models/user_model';
+import { ChangeEvent, FC, useState, SyntheticEvent } from 'react';
+import { UserListData, UserStatus } from '../../models/user_model';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-
-
-
+import UserList from './UserList';
 
 interface UserListProps{
   className?: string;
   userList: UserListData[];
 }
 
-
+interface Filters {
+  status?: UserStatus;
+}
 
 const LabelWrapper = styled('span')(({theme, color})=>({
   backgroundColor: color,
@@ -110,7 +111,6 @@ const theme = createTheme({
   }
 });
 
-
 const getStatusLabel = (role: string): JSX.Element => {
   const map = {
     admin: {
@@ -131,30 +131,96 @@ const getStatusLabel = (role: string): JSX.Element => {
   return <LabelWrapper color={color}>{text}</LabelWrapper>;
 }
 
+const applyFilters = (
+  userList: UserListData[],
+  filters: Filters
+): UserListData[] => {
+  return userList.filter((userList) => {
+    let matches = true;
+
+    if (filters.status && userList.status !== filters.status) {
+      matches = false;
+    }
+
+    return matches;
+  });
+};
+
+const applyPagination = (
+  userList: UserListData[],
+  page: number,
+  limit: number
+): UserListData[] => {
+  return userList.slice(page * limit, page * limit + limit);
+};
+
 const UserListTable: FC<UserListProps> =({ userList }) =>{
-  const [page, setPage] = useState<number>(0);
+  const [selectedListUser, setSelectedListUser] = useState<string[]>([]);
+  const [filters, setFilters] = useState<Filters>({
+    status: null,
+  });
   const [limit, setLimit] = useState<number>(5);
-  const [currentTab, setCurrentTab] = useState<string>('all');
+  const [page, setPage] = useState<number>(0);
+
+
 
   const status = [
     { value: 'all', label: 'All User' },
     { value: 'admin', label: 'Administrators' },
-    { value: 'subcriber', label: 'Subcribers' },
+    { value: 'subscriber', label: 'Subcribers' },
     { value: 'customer', label: 'Customers' }
   ];
 
-  const handleTabChange = (e: React.SyntheticEvent, newStatus: string): void =>{
-    console.log(newStatus);
-    setCurrentTab(newStatus);
-  }
 
-  const handlePageChange = (event: any, newPage: number):void =>{
+  const handlePageChange = (event: any, newPage: number): void => {
     setPage(newPage);
+  };
+
+  const handleLimitChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    setLimit(parseInt(event.target.value));
+  };
+
+  const filteredUserList = applyFilters(userList, filters);
+
+  const paginatedUserlist = applyPagination(
+    filteredUserList,
+    page,
+    limit
+  );
+
+  const handleTabsChange = (e: SyntheticEvent, newValue: string): void =>{
+    let value = null;
+    console.log(newValue);
+    if(newValue !== 'all')
+    {
+      value = newValue;
+    }
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      status: value,
+    }));
+  }
+  
+  const handleSelectOneUser=(e: ChangeEvent<HTMLInputElement>, userListId: string): void =>{
+    if(!selectedListUser.includes(userListId))
+    {
+      setSelectedListUser((prevSelected)=> [...prevSelected, userListId]);
+    } else {
+      setSelectedListUser((prevSelected) => prevSelected.filter((id) => id !== userListId));
+    }
   }
 
-  const handleLimitChange = (event: ChangeEvent<HTMLInputElement>): void =>{
-    setLimit(parseInt(event.target.value));
+  const handleSelectAllListUser = (e: ChangeEvent<HTMLInputElement>):void =>{
+    setSelectedListUser(
+      e.target.checked
+        ? userList.map((userList) => userList.id)
+        : []
+    );
   }
+  const selectedAllUser = selectedListUser.length === userList.length;
+    
+  const selectedSomeUser = selectedListUser.length > 0 && selectedListUser.length < userList.length;
+
    return (
     <ThemeProvider theme={theme}>
       <Box
@@ -168,12 +234,11 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
           scrollButtons="auto"
           textColor="primary"
           indicatorColor="primary"
-          value={currentTab}
-          onChange={handleTabChange}
-          aria-label="basic tabs example"
+          value={filters.status || 'all'}
+          onChange={handleTabsChange}
         >
           {status.map((status) => (
-                <Tab key={status.value} label={status.label} value={status.value} disableFocusRipple />
+                <Tab key={status.value} label={status.label} value={status.value} />
               ))}
         </Tabs>
       </Box>
@@ -184,7 +249,7 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
           justifyContent="space-between"
           alignContent='center'
         >
-              <TextField
+        <TextField
         sx={{ mx:'10px', my: 1 }}
         size="small"
         fullWidth
@@ -206,6 +271,9 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
                 <TableCell padding="checkbox">  
                   <Checkbox 
                     color='primary'
+                    indeterminate={selectedSomeUser}
+                    checked={selectedAllUser}
+                    onChange={handleSelectAllListUser}
                   />
                 </TableCell>
                 <SyledTableHeader align='left'>USER NAME</SyledTableHeader>
@@ -219,7 +287,8 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
             </TableHead>
 
             <TableBody>
-              {userList.map((user: any)=>{
+              {paginatedUserlist.map((user: any)=>{
+                const isUserSelected = selectedListUser.includes(user.id);
                 return (
                  <TableRow
                   hover
@@ -228,9 +297,12 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
                   <TableCell padding='checkbox'>
                      <Checkbox
                       color='primary'
+                      checked={isUserSelected}
+                      onChange={(e: ChangeEvent<HTMLInputElement>, ) => handleSelectOneUser(e, user.id)}
+                      value={isUserSelected}
                     />
                   </TableCell>
-                   <TableCell>
+                   <TableCell >
                      <Typography>{user.username}</Typography>
                    </TableCell>
                    <TableCell >
@@ -283,6 +355,17 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
             </TableBody>
           </Table>
         </TableContainer>
+        <Box p={2}>
+        <TablePagination
+          component="div"
+          count={filteredUserList.length}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleLimitChange}
+          page={page}
+          rowsPerPage={limit}
+          rowsPerPageOptions={[5, 10, 25, 30]}
+        />
+      </Box>
     </Card>
     </ThemeProvider>
   );

@@ -2,7 +2,7 @@ export type UserStatus = 'admin' | 'subscriber' | 'customer';
 
 export interface UserListData {
     id: string,
-    status?: UserStatus[],
+    status?: UserStatus[] | string,
     username: string,
     name: string,
     avatar: string,
