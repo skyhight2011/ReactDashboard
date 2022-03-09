@@ -3,8 +3,7 @@ import { UserListData } from '../../models/user_model'
 import UserListTable from './UserListTable';
 
 function UserList (){ 
- 
-    const userList:UserListData[] = [
+    const UserList: UserListData[] = [
      {
        id: '1',
        name: 'Rafael Kunde',
@@ -307,7 +306,7 @@ function UserList (){
    
    return (
     <Card>
-       <UserListTable userList={userList} />
+       <UserListTable userList={UserList} />
     </Card>
   );
  }
