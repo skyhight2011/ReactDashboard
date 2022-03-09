@@ -110,23 +110,23 @@ const theme = createTheme({
   }
 });
 
-const getStatusLabel = (role: string): JSX.Element => {
+const getStatusLabel = (status: string): JSX.Element => {
   const map = {
     admin: {
       text: 'Administrator',
       color: '#ff19431a'
     },
     subscriber: {
-      text: 'Customer',
+      text: 'Subscriber',
       color: '#33c2ff1a'
     },
     customer: {
-      text: 'Subscriber',
+      text: 'Customer',
       color: '#ffa3191a'
     }
   };
 
-  const { color, text }: any = map[role as keyof typeof map];
+  const { color, text }: any = map[status as keyof typeof map];
   return <LabelWrapper color={color}>{text}</LabelWrapper>;
 }
 
@@ -157,14 +157,12 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
   const [limit, setLimit] = useState<number>(5);
   const [page, setPage] = useState<number>(0);
 
-
   const statusOptions  = [
     { value: 'all', label: 'All User' },
     { value: 'admin', label: 'Administrators' },
     { value: 'subscriber', label: 'Subcribers' },
     { value: 'customer', label: 'Customers' }
   ];
-
 
   const handlePageChange = (event: any, newPage: number): void => {
     setPage(newPage);
@@ -175,6 +173,7 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
   };
 
   const handleTabsChange = (e: SyntheticEvent, newValue: string): void =>{
+    console.log(newValue);
     let value = null;
     if(newValue !== 'all')
     {
@@ -203,9 +202,13 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
         : []
     );
   }
-  const filteredUserList = applyFilters(userList, filters);  
+  console.log(filters);
+  
+  const filteredUserList = applyFilters(userList, filters);
+  console.log(filteredUserList);
 
   const paginatedUserlist = applyPagination(filteredUserList, page, limit);
+  console.log(paginatedUserlist);
 
   const selectedAllUser = selectedListUser.length === userList.length;
 
@@ -227,8 +230,8 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
           value={filters.status || 'all'}
           onChange={handleTabsChange}
         >
-          {statusOptions.map((statusOptions) => (
-                <Tab key={statusOptions.value} label={statusOptions.label} value={statusOptions.value} />
+          {statusOptions.map((statusOption) => (
+                <Tab key={statusOption.value} label={statusOption.label} value={statusOption.value} />
               ))}
         </Tabs>
       </Box>
