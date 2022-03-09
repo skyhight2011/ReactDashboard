@@ -1,8 +1,17 @@
-// import UserData from '../UserData';
 export type UserStatus = 'admin' | 'subscriber' | 'customer';
 
-// export interface UserData {
-// id: string,
-// role: string,
-
-// }
+export interface UserListData {
+    id: string,
+    status?: UserStatus[] | string,
+    username: string,
+    name: string,
+    avatar: string,
+    email: string,
+    location: string,
+    role: string,
+    posts: string,
+    jobtitle: string,
+    coverImg: string,
+    followers: string,
+    description: string
+}
