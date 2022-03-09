@@ -21,7 +21,6 @@ import { styled } from '@mui/material/styles';
 import { ChangeEvent, FC, useState, SyntheticEvent } from 'react';
 import { UserListData, UserStatus } from '../../models/user_model';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import UserList from './UserList';
 
 interface UserListProps{
   className?: string;
@@ -131,20 +130,16 @@ const getStatusLabel = (role: string): JSX.Element => {
   return <LabelWrapper color={color}>{text}</LabelWrapper>;
 }
 
-const applyFilters = (
-  userList: UserListData[],
-  filters: Filters
-): UserListData[] => {
-  return userList.filter((userList) => {
+const applyFilters = (ListItem: UserListData[], filters: Filters): UserListData[] => {
+  return ListItem.filter((items) => {
     let matches = true;
-
-    if (filters.status && userList.status !== filters.status) {
+    if(filters.status && items.role !== filters.status) {
       matches = false;
     }
-
     return matches;
   });
 };
+
 
 const applyPagination = (
   userList: UserListData[],
@@ -163,8 +158,7 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
   const [page, setPage] = useState<number>(0);
 
 
-
-  const status = [
+  const statusOptions  = [
     { value: 'all', label: 'All User' },
     { value: 'admin', label: 'Administrators' },
     { value: 'subscriber', label: 'Subcribers' },
@@ -180,27 +174,19 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
     setLimit(parseInt(event.target.value));
   };
 
-  const filteredUserList = applyFilters(userList, filters);
-
-  const paginatedUserlist = applyPagination(
-    filteredUserList,
-    page,
-    limit
-  );
-
   const handleTabsChange = (e: SyntheticEvent, newValue: string): void =>{
     let value = null;
-    console.log(newValue);
     if(newValue !== 'all')
     {
       value = newValue;
     }
-    setFilters((prevFilters) => ({
+    setFilters((prevFilters) => (
+      {
       ...prevFilters,
       status: value,
     }));
   }
-  
+
   const handleSelectOneUser=(e: ChangeEvent<HTMLInputElement>, userListId: string): void =>{
     if(!selectedListUser.includes(userListId))
     {
@@ -217,8 +203,12 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
         : []
     );
   }
+  const filteredUserList = applyFilters(userList, filters);  
+
+  const paginatedUserlist = applyPagination(filteredUserList, page, limit);
+
   const selectedAllUser = selectedListUser.length === userList.length;
-    
+
   const selectedSomeUser = selectedListUser.length > 0 && selectedListUser.length < userList.length;
 
    return (
@@ -237,8 +227,8 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
           value={filters.status || 'all'}
           onChange={handleTabsChange}
         >
-          {status.map((status) => (
-                <Tab key={status.value} label={status.label} value={status.value} />
+          {statusOptions.map((statusOptions) => (
+                <Tab key={statusOptions.value} label={statusOptions.label} value={statusOptions.value} />
               ))}
         </Tabs>
       </Box>
