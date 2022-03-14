@@ -1,12 +1,19 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import LaunchIcon from '@mui/icons-material/Launch';
 import SearchTwoToneIcon from '@mui/icons-material/SearchTwoTone';
-import type {} from '@mui/lab/themeAugmentation';
+import CloseTwoToneIcon from '@mui/icons-material/CloseTwoTone';
+import CloseIcon from '@mui/icons-material/Close';
+
+import type { } from '@mui/lab/themeAugmentation';
 import {
   Avatar,
   Box,
+  Button,
   Card,
   Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
   Divider,
   IconButton, InputAdornment, Tab, Table,
   TableBody,
@@ -21,8 +28,9 @@ import { styled } from '@mui/material/styles';
 import { ChangeEvent, FC, useState, SyntheticEvent } from 'react';
 import { UserListData, UserStatus } from '../../models/user_model';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import DeleteDialog from './DeleteDialog';
 
-interface UserListProps{
+interface UserListProps {
   className?: string;
   userList: UserListData[];
 }
@@ -31,7 +39,7 @@ interface Filters {
   status?: UserStatus;
 }
 
-const LabelWrapper = styled('span')(({theme, color})=>({
+const LabelWrapper = styled('span')(({ theme, color }) => ({
   backgroundColor: color,
   borderRadius: 15,
   padding: theme.spacing(0.5, 1),
@@ -80,33 +88,33 @@ const theme = createTheme({
           overflow: 'visible !important'
         }
       }
-  },
-   MuiTab: {
-    styleOverrides: {
-      root: {
-        padding: 0,
-        height: 38,
-        minHeight: 38,
-        borderRadius: 6,
-        transition: 'color .2s',
-        textTransform: 'capitalize',
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          padding: 0,
+          height: 38,
+          minHeight: 38,
+          borderRadius: 6,
+          transition: 'color .2s',
+          textTransform: 'capitalize',
 
-        '&.MuiButtonBase-root': {
-          minWidth: 'auto',
-          paddingLeft: 20,
-          paddingRight: 20,
-          marginRight: 4
-        },
-        '&.Mui-selected, &.Mui-selected:hover': {
-          color: '#2196f3',
-          zIndex: 5
-        },
-        '&:hover': {
-          color: '#90caf9'
+          '&.MuiButtonBase-root': {
+            minWidth: 'auto',
+            paddingLeft: 20,
+            paddingRight: 20,
+            marginRight: 4
+          },
+          '&.Mui-selected, &.Mui-selected:hover': {
+            color: '#2196f3',
+            zIndex: 5
+          },
+          '&:hover': {
+            color: '#90caf9'
+          }
         }
       }
-    }
-  },
+    },
   }
 });
 
@@ -133,7 +141,7 @@ const getStatusLabel = (status: string): JSX.Element => {
 const applyFilters = (ListItem: UserListData[], filters: Filters): UserListData[] => {
   return ListItem.filter((items) => {
     let matches = true;
-    if(filters.status && items.role !== filters.status) {
+    if (filters.status && items.role !== filters.status) {
       matches = false;
     }
     return matches;
@@ -149,15 +157,18 @@ const applyPagination = (
   return userList.slice(page * limit, page * limit + limit);
 };
 
-const UserListTable: FC<UserListProps> =({ userList }) =>{
+const UserListTable: FC<UserListProps> = ({ userList }) => {
   const [selectedListUser, setSelectedListUser] = useState<string[]>([]);
   const [filters, setFilters] = useState<Filters>({
     status: null,
   });
   const [limit, setLimit] = useState<number>(5);
   const [page, setPage] = useState<number>(0);
+  const [userListFiltered, setUserListfiltered] = useState<UserListData[]>(userList);
+  const [open, setOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
-  const statusOptions  = [
+  const statusOptions = [
     { value: 'all', label: 'All User' },
     { value: 'admin', label: 'Administrators' },
     { value: 'subscriber', label: 'Subcribers' },
@@ -172,52 +183,64 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
     setLimit(parseInt(event.target.value));
   };
 
-  const handleTabsChange = (e: SyntheticEvent, newValue: string): void =>{
+  const handleTabsChange = (e: SyntheticEvent, newValue: string): void => {
     console.log(newValue);
     let value = null;
-    if(newValue !== 'all')
-    {
+    if (newValue !== 'all') {
       value = newValue;
     }
     setFilters((prevFilters) => (
       {
-      ...prevFilters,
-      status: value,
-    }));
+        ...prevFilters,
+        status: value,
+      }));
   }
 
-  const handleSelectOneUser=(e: ChangeEvent<HTMLInputElement>, userListId: string): void =>{
-    if(!selectedListUser.includes(userListId))
-    {
-      setSelectedListUser((prevSelected)=> [...prevSelected, userListId]);
+  const handleSelectOneUser = (e: ChangeEvent<HTMLInputElement>, userListId: string): void => {
+    if (!selectedListUser.includes(userListId)) {
+      setSelectedListUser((prevSelected) => [...prevSelected, userListId]);
     } else {
       setSelectedListUser((prevSelected) => prevSelected.filter((id) => id !== userListId));
     }
   }
 
-  const handleSelectAllListUser = (e: ChangeEvent<HTMLInputElement>):void =>{
+  const handleSelectAllListUser = (e: ChangeEvent<HTMLInputElement>): void => {
     setSelectedListUser(
       e.target.checked
         ? userList.map((userList) => userList.id)
         : []
     );
   }
-  console.log(filters);
+
+  const handleClickDelete = () => {
+    setOpen(true);
+  }
+
+  const handleCloseDelete = (userId) => {
+    setOpen(false);
+    const newFilteredList = userList.filter(item => !userId.includes(item));
+    setUserListfiltered(newFilteredList);
+  }
+
+  const handleSearchTextChange = (e) =>{
+    const text = e.target.value;
+    setSearchText(text);
+  }
+
+  const searchFilltered = userListFiltered.filter(item => item.name.toLowerCase().includes(searchText.toLowerCase()));
   
-  const filteredUserList = applyFilters(userList, filters);
-  console.log(filteredUserList);
+  const filteredUserList = applyFilters(searchFilltered, filters);
 
   const paginatedUserlist = applyPagination(filteredUserList, page, limit);
-  console.log(paginatedUserlist);
 
   const selectedAllUser = selectedListUser.length === userList.length;
 
   const selectedSomeUser = selectedListUser.length > 0 && selectedListUser.length < userList.length;
 
-   return (
+  return (
     <ThemeProvider theme={theme}>
       <Box
-      sx={{width: '100%'}}
+        sx={{ width: '100%' }}
         display="flex"
         justifyContent="space-between"
         alignContent='center'
@@ -231,38 +254,40 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
           onChange={handleTabsChange}
         >
           {statusOptions.map((statusOption) => (
-                <Tab key={statusOption.value} label={statusOption.label} value={statusOption.value} />
-              ))}
+            <Tab key={statusOption.value} label={statusOption.label} value={statusOption.value} />
+          ))}
         </Tabs>
       </Box>
-    <Card>
+      <Card>
         <Box
           sx={{ pt: 1, pb: 1 }}
           display="flex"
           justifyContent="space-between"
           alignContent='center'
         >
-        <TextField
-        sx={{ mx:'10px', my: 1 }}
-        size="small"
-        fullWidth
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchTwoToneIcon />
-            </InputAdornment>
-          )
-        }}
-        placeholder="Search..."
-      />
+          <TextField
+            sx={{ mx: '10px', my: 1 }}
+            size="small"
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchTwoToneIcon />
+                </InputAdornment>
+              )
+            }}
+            placeholder="Search..."
+            value={searchText}
+            onChange={handleSearchTextChange}
+          />
         </Box>
-         <Divider />
-         <TableContainer>
+        <Divider />
+        <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell padding="checkbox">  
-                  <Checkbox 
+                <TableCell padding="checkbox">
+                  <Checkbox
                     color='primary'
                     indeterminate={selectedSomeUser}
                     checked={selectedAllUser}
@@ -270,7 +295,7 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
                   />
                 </TableCell>
                 <SyledTableHeader align='left'>USER NAME</SyledTableHeader>
-                <SyledTableHeader  align='left'>NAME</SyledTableHeader>
+                <SyledTableHeader align='left'>NAME</SyledTableHeader>
                 <SyledTableHeader align='left'>EMAIL</SyledTableHeader>
                 <SyledTableHeader align='left'>POST</SyledTableHeader>
                 <SyledTableHeader align='left'>LOCATION</SyledTableHeader>
@@ -280,86 +305,92 @@ const UserListTable: FC<UserListProps> =({ userList }) =>{
             </TableHead>
 
             <TableBody>
-              {paginatedUserlist.map((user: any)=>{
+              {paginatedUserlist.map((user: any) => {
                 const isUserSelected = selectedListUser.includes(user.id);
                 return (
-                 <TableRow
-                  hover
-                  key={user.id} 
-                 >
-                  <TableCell padding='checkbox'>
-                     <Checkbox
-                      color='primary'
-                      checked={isUserSelected}
-                      onChange={(e: ChangeEvent<HTMLInputElement>, ) => handleSelectOneUser(e, user.id)}
-                      value={isUserSelected}
-                    />
-                  </TableCell>
-                   <TableCell >
-                     <Typography>{user.username}</Typography>
-                   </TableCell>
-                   <TableCell >
-                     <Box display='flex'>
-                          <Avatar sizes='small' src={user.avatar} alt={user.name} />
-                       <Box sx={{marginLeft: 2}}>
+                  <TableRow
+                    hover
+                    key={user.id}
+                  >
+                    <TableCell padding='checkbox'>
+                      <Checkbox
+                        color='primary'
+                        checked={isUserSelected}
+                        onChange={(e: ChangeEvent<HTMLInputElement>,) => handleSelectOneUser(e, user.id)}
+                        value={isUserSelected}
+                      />
+                    </TableCell>
+                    <TableCell >
+                      <Typography>{user.username}</Typography>
+                    </TableCell>
+                    <TableCell >
+                      <Box display='flex'>
+                        <Avatar sizes='small' src={user.avatar} alt={user.name} />
+                        <Box sx={{ marginLeft: 2 }}>
                           <Typography
-                             variant="body1"
-                             fontWeight="bold"
-                             color="#5569ff"
-                             gutterBottom
-                             noWrap
-                             lineHeight={1.57}
+                            variant="body1"
+                            fontWeight="bold"
+                            color="#5569ff"
+                            gutterBottom
+                            noWrap
+                            lineHeight={1.57}
                           >{user.name}</Typography>
                           <Typography
-                          variant="subtitle1"
-                          color="text.primary"
-                          noWrap
+                            variant="subtitle1"
+                            color="text.primary"
+                            noWrap
                           >{user.jobtitle}</Typography>
-                       </Box>
-                     </Box>
-                     </TableCell>
-                   <TableCell>{user.email}</TableCell>
-                   <TableCell>{user.posts}</TableCell>
-                   <TableCell>
-                     <Typography display='flex' noWrap>
-                       {user.location}
-                       </Typography>
-                     </TableCell>
-                   <TableCell>
-                     {getStatusLabel(user?.role)}
-                   </TableCell>
-                   <TableCell>
-                     <Box sx={{display:'flex', flexWrap:'nowrap'}}>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.posts}</TableCell>
+                    <TableCell>
+                      <Typography display='flex' noWrap>
+                        {user.location}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {getStatusLabel(user?.role)}
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexWrap: 'nowrap' }}>
                         <Tooltip title='View User' arrow>
-                            <IconButton>
+                          <IconButton>
                             <LaunchIcon fontSize="small" />
-                            </IconButton>
+                          </IconButton>
                         </Tooltip>
-                        <Tooltip title='Delete User' arrow>
-                            <IconButton>
+                        <Tooltip
+                          title='Delete User'
+                          arrow
+                        >
+                          <IconButton
+                            onClick={() => handleClickDelete()}
+                          >
                             <DeleteIcon fontSize="small" />
-                            </IconButton>
+                          </IconButton>
                         </Tooltip>
-                     </Box>
-                   </TableCell>
-                 </TableRow>
+                        <DeleteDialog open={open} handleClose={()=> handleCloseDelete(user.id)} />
+                      </Box>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
             </TableBody>
           </Table>
         </TableContainer>
         <Box p={2}>
-        <TablePagination
-          component="div"
-          count={filteredUserList.length}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleLimitChange}
-          page={page}
-          rowsPerPage={limit}
-          rowsPerPageOptions={[5, 10, 25, 30]}
-        />
-      </Box>
-    </Card>
+          <TablePagination
+            component="div"
+            count={filteredUserList.length}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleLimitChange}
+            page={page}
+            rowsPerPage={limit}
+            rowsPerPageOptions={[5, 10, 25, 30]}
+          />
+        </Box>
+      </Card>
     </ThemeProvider>
   );
 }
